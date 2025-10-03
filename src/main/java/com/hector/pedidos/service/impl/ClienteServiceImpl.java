@@ -11,11 +11,15 @@ import org.springframework.stereotype.Service;
 import com.hector.pedidos.dto.request.ClienteRequest;
 import com.hector.pedidos.dto.response.ClienteResponse;
 import com.hector.pedidos.exception.ClienteNoEncontradoException;
+import com.hector.pedidos.exception.PedidoNoEncontradoException;
+import com.hector.pedidos.exception.ProductoNoEncontradoException;
 import com.hector.pedidos.model.Cliente;
 import com.hector.pedidos.model.Pedido;
 import com.hector.pedidos.model.Producto;
+import com.hector.pedidos.model.ProductoPedido;
 import com.hector.pedidos.repository.ClienteRepository;
 import com.hector.pedidos.repository.PedidoRepository;
+import com.hector.pedidos.repository.ProductoPedidoRepository;
 import com.hector.pedidos.repository.ProductoRepository;
 import com.hector.pedidos.service.ClienteService;
 
@@ -25,12 +29,14 @@ public class ClienteServiceImpl implements ClienteService{
     private final ClienteRepository repoCliente;
     private final ProductoRepository repoProducto;
     private final PedidoRepository repoPedido;
+    private final ProductoPedidoRepository repoProductoPedido;
 
     public ClienteServiceImpl(ClienteRepository repoCliente, ProductoRepository repoProducto,
-            PedidoRepository repoPedido) {
+            PedidoRepository repoPedido, ProductoPedidoRepository repoProductoPedido) {
         this.repoCliente = repoCliente;
         this.repoProducto = repoProducto;
         this.repoPedido = repoPedido;
+        this.repoProductoPedido = repoProductoPedido;
     }
 
     @Override
@@ -51,23 +57,23 @@ public class ClienteServiceImpl implements ClienteService{
 
     @Override
     public ClienteResponse buscarClientePedido(Long idPedido) {
-        Pedido pedido = repoPedido.findById(idPedido).orElseThrow(() -> new RuntimeException("No se encontro el pedido con Id = " + idPedido));
+        Pedido pedido = repoPedido.findById(idPedido).orElseThrow(() -> new PedidoNoEncontradoException("No se encontro el pedido con Id = " + idPedido));
         Cliente cliente = pedido.getCliente();
         return new ClienteResponse(cliente.getId(), cliente.getNombre(), cliente.getDni());
     }
 
     @Override
     public Set<ClienteResponse> buscarClientesProducto(Long idProducto) {
-        Producto producto = repoProducto.findById(idProducto).orElseThrow(() -> new RuntimeException("No se encontro el producto con Id = " + idProducto));
+        Producto producto = repoProducto.findById(idProducto).orElseThrow(() -> new ProductoNoEncontradoException("No se encontro el producto con Id = " + idProducto));
         Set<ClienteResponse> respuesta = new HashSet<>();
-        List<Pedido> pedidos = repoPedido.findAll();
-        for(Pedido p : pedidos){
-            for(Producto c : p.getProductos()){
-                if(c.equals(producto)){
-                    respuesta.add(new ClienteResponse(p.getCliente().getId(), p.getCliente().getNombre(), p.getCliente().getDni()));
-                }
+
+        List<ProductoPedido> productosPedidos = repoProductoPedido.findAll();
+        for(ProductoPedido pp : productosPedidos){
+            if(pp.getProducto().equals(producto)){
+                Cliente cliente = pp.getPedido().getCliente();
+                ClienteResponse respuestaCliente = new ClienteResponse(cliente.getId(), cliente.getNombre(), cliente.getDni());
+                respuesta.add(respuestaCliente);
             }
-            
         }
         
         return respuesta;

@@ -11,15 +11,17 @@ import org.springframework.stereotype.Service;
 import com.hector.pedidos.dto.request.PedidoRequest;
 import com.hector.pedidos.dto.response.ClienteResponse;
 import com.hector.pedidos.dto.response.PedidoResponse;
-import com.hector.pedidos.dto.response.ProductoResponse;
+import com.hector.pedidos.exception.ClienteNoEncontradoException;
+import com.hector.pedidos.exception.PedidoNoEncontradoException;
+import com.hector.pedidos.exception.ProductoNoEncontradoException;
 import com.hector.pedidos.model.Cliente;
 import com.hector.pedidos.model.Pedido;
-import com.hector.pedidos.model.Producto;
+import com.hector.pedidos.model.ProductoPedido;
 import com.hector.pedidos.repository.ClienteRepository;
 import com.hector.pedidos.repository.PedidoRepository;
+import com.hector.pedidos.repository.ProductoPedidoRepository;
 import com.hector.pedidos.repository.ProductoRepository;
 import com.hector.pedidos.service.PedidoService;
-import com.hector.pedidos.service.ProductoService;
 
 @Qualifier("ServicioPedido")
 @Service
@@ -27,42 +29,35 @@ public class PedidoServiceImpl implements PedidoService{
     private final ClienteRepository repoCliente;
     private final ProductoRepository repoProducto;
     private final PedidoRepository repoPedido;
-    private final ProductoService servicioProducto;
+    private final ProductoPedidoRepository repoProductoPedido;
 
     public PedidoServiceImpl(ClienteRepository repoCliente, ProductoRepository repoProducto,
-            PedidoRepository repoPedido, ProductoService servicioProducto) {
+            PedidoRepository repoPedido, ProductoPedidoRepository repoProductoPedido) {
         this.repoCliente = repoCliente;
         this.repoProducto = repoProducto;
         this.repoPedido = repoPedido;
-        this.servicioProducto = servicioProducto;
+        this.repoProductoPedido = repoProductoPedido;
     }
 
     @Override
     public PedidoResponse agregarPedido(PedidoRequest dto) {
-        Cliente cliente = repoCliente.findById(dto.getIdCliente()).orElseThrow(() -> new RuntimeException("No se encontro el cliente."));
-        List<Producto> productos = new ArrayList<>();
-
-        for(Long id : dto.getIdProductos()){
-            Producto producto = repoProducto.findById(id).orElseThrow(() -> new RuntimeException("No se encontro el producto."));
-            productos.add(producto);
-        }
-        Pedido pedido = new Pedido(cliente, productos);
+        Cliente cliente = repoCliente.findById(dto.getIdCliente()).orElseThrow(() -> new ClienteNoEncontradoException("El cliente con ID " + dto.getIdCliente() + " no existe."));
+        
+        Pedido pedido = new Pedido(cliente);
         Pedido guardado = repoPedido.save(pedido);
         
         ClienteResponse respuestaCliente = new ClienteResponse(cliente.getId(), cliente.getNombre(), cliente.getDni());
-        List<ProductoResponse> listaProductos = servicioProducto.productosPedido(guardado.getId());
-    
-        return new PedidoResponse(guardado.getId(), respuestaCliente, listaProductos);
+        
+        return new PedidoResponse(guardado.getId(), respuestaCliente);
         
     }
 
     @Override
     public PedidoResponse buscarPedido(Long idPedido) {
-        Pedido pedido = repoPedido.findById(idPedido).orElseThrow(() -> new RuntimeException("No se encontro el pedido."));
+        Pedido pedido = repoPedido.findById(idPedido).orElseThrow(() -> new PedidoNoEncontradoException("El pedido con ID " + idPedido + " no existe."));
         ClienteResponse respuestaCliente = new ClienteResponse(pedido.getCliente().getId(), pedido.getCliente().getNombre(), pedido.getCliente().getDni());
-        List<ProductoResponse> productos = servicioProducto.productosPedido(idPedido); 
 
-        return new PedidoResponse(idPedido, respuestaCliente, productos);
+        return new PedidoResponse(idPedido, respuestaCliente);
     }
 
     @Override
@@ -77,8 +72,7 @@ public class PedidoServiceImpl implements PedidoService{
 
         for(Pedido p : guardados){
             ClienteResponse respuestaCliente = new ClienteResponse(p.getCliente().getId(), p.getCliente().getNombre(), p.getCliente().getDni());
-            List<ProductoResponse> productos = servicioProducto.productosPedido(p.getId());
-            PedidoResponse respuestaPedido = new PedidoResponse(p.getId(), respuestaCliente, productos);
+            PedidoResponse respuestaPedido = new PedidoResponse(p.getId(), respuestaCliente);
             pedidos.add(respuestaPedido);
         }
         return pedidos;
@@ -86,34 +80,36 @@ public class PedidoServiceImpl implements PedidoService{
 
     @Override
     public List<PedidoResponse> pedidosCliente(Long idCliente) {
-        Cliente cliente = repoCliente.findById(idCliente).orElseThrow(() -> new RuntimeException("No se encontro el cliente."));
+        Cliente cliente = repoCliente.findById(idCliente).orElseThrow(() -> new ClienteNoEncontradoException("El cliente con ID " + idCliente + " no existe."));
         ClienteResponse respuestaCliente = new ClienteResponse(idCliente, cliente.getNombre(), cliente.getDni());
         List<Pedido> pedidos = cliente.getPedidos();
         List<PedidoResponse> respuesta = new ArrayList<>();
 
         for(Pedido p : pedidos){
-            List<ProductoResponse> productos = servicioProducto.productosPedido(p.getId());
-            PedidoResponse respuestaPedido = new PedidoResponse(p.getId(), respuestaCliente, productos);
+            PedidoResponse respuestaPedido = new PedidoResponse(p.getId(), respuestaCliente);
             respuesta.add(respuestaPedido);
         }
+
         return respuesta;
     }
 
     @Override
     public Set<PedidoResponse> pedidosProducto(Long idProducto) {
-        List<Pedido> pedidos = repoPedido.findAll();
+        if(!repoProducto.existsById(idProducto)){
+            throw new ProductoNoEncontradoException("El producto con ID " + idProducto + " no existe");
+        }
+
+        List<ProductoPedido> listaProductoPedido = repoProductoPedido.findByProductoId(idProducto);
+
         Set<PedidoResponse> respuesta = new HashSet<>();
 
-        for(Pedido p : pedidos){
-            List<ProductoResponse> productos = servicioProducto.productosPedido(p.getId());
-            for(ProductoResponse c : productos){
-                if(c.getId().equals(idProducto)){
-                    ClienteResponse respuestaCliente = new ClienteResponse(p.getCliente().getId(), p.getCliente().getNombre(), p.getCliente().getDni());
-                    PedidoResponse respuestaPedido = new PedidoResponse(p.getId(), respuestaCliente, productos);
-                    respuesta.add(respuestaPedido);
-                }
-            }
+        for(ProductoPedido pp : listaProductoPedido){
+            Pedido pedido = pp.getPedido();
+            Cliente cliente = pedido.getCliente();
+            ClienteResponse clienteResponse = new ClienteResponse(cliente.getId(), cliente.getNombre(), cliente.getDni());
+            PedidoResponse pedidoResponse = new PedidoResponse(pedido.getId(), clienteResponse);
             
+            respuesta.add(pedidoResponse);
         }
         return respuesta;
     }

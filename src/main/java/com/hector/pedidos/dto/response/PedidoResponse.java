@@ -1,16 +1,14 @@
 package com.hector.pedidos.dto.response;
 
-import java.util.List;
-
 public class PedidoResponse {
     private Long id;
     private ClienteResponse cliente;
-    private List<ProductoResponse> productos;
+    //private List<ProductoResponse> productos;
     
-    public PedidoResponse(Long id, ClienteResponse cliente, List<ProductoResponse> productos) {
+    public PedidoResponse(Long id, ClienteResponse cliente) {
         this.id = id;
         this.cliente = cliente;
-        this.productos = productos;
+        //this.productos = productos;
     }
 
     public Long getId() {
@@ -19,10 +17,6 @@ public class PedidoResponse {
 
     public ClienteResponse getCliente() {
         return cliente;
-    }
-
-    public List<ProductoResponse> getProductos() {
-        return productos;
     }
 
     @Override
@@ -49,7 +43,5 @@ public class PedidoResponse {
             return false;
         return true;
     }
-
-    
     
 }

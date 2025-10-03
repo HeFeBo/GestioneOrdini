@@ -6,6 +6,7 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import jakarta.validation.constraints.NotNull;
 
 @Entity
 public class ProductoPedido {
@@ -13,19 +14,23 @@ public class ProductoPedido {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @NotNull(message = "El pedido no puede ser nulo")
     @ManyToOne
     @JoinColumn(name = "pedido_id")
     private Pedido pedido;
 
+    @NotNull(message = "El producto no puede ser nulo")
     @ManyToOne
     @JoinColumn(name = "producto_id")
     private Producto producto;
 
-    
+    @NotNull(message = "La cantidad no puede ser nula")
+    private Integer cantidad;
 
-    public ProductoPedido(Pedido pedido, Producto producto) {
+    public ProductoPedido(Pedido pedido, Producto producto, Integer cantidad) {
         this.pedido = pedido;
         this.producto = producto;
+        this.cantidad = cantidad;
     }
 
     public ProductoPedido(){
@@ -34,10 +39,6 @@ public class ProductoPedido {
 
     public Long getId() {
         return id;
-    }
-
-    public void setId(Long id) {
-        this.id = id;
     }
 
     public Pedido getPedido() {
@@ -54,6 +55,14 @@ public class ProductoPedido {
 
     public void setProducto(Producto producto) {
         this.producto = producto;
+    }
+
+    public Integer getCantidad() {
+        return cantidad;
+    }
+
+    public void setCantidad(Integer cantidad) {
+        this.cantidad = cantidad;
     }
 
 }

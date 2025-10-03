@@ -1,14 +1,10 @@
 package com.hector.pedidos.model;
 
-import java.util.List;
-
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
-import jakarta.persistence.JoinTable;
-import jakarta.persistence.ManyToMany;
 import jakarta.persistence.ManyToOne;
 
 @Entity
@@ -21,17 +17,8 @@ public class Pedido {
     @JoinColumn(name = "cliente_id")
     private Cliente cliente;
 
-    @ManyToMany
-    @JoinTable(
-        name = "pedido_producto", 
-        joinColumns = @JoinColumn(name = "pedido_id"), 
-        inverseJoinColumns = @JoinColumn(name = "producto_id") 
-    )
-    private List<Producto> productos;
-
-    public Pedido(Cliente cliente, List<Producto> productos) {
+    public Pedido(Cliente cliente) {
         this.cliente = cliente;
-        this.productos = productos;
     }
 
     public Pedido(){
@@ -42,24 +29,37 @@ public class Pedido {
         return id;
     }
 
-
     public Cliente getCliente() {
         return cliente;
     }
-
 
     public void setCliente(Cliente cliente) {
         this.cliente = cliente;
     }
 
-
-    public List<Producto> getProductos() {
-        return productos;
+    @Override
+    public int hashCode() {
+        final int prime = 31;
+        int result = 1;
+        result = prime * result + ((id == null) ? 0 : id.hashCode());
+        return result;
     }
 
-
-    public void setProductos(List<Producto> productos) {
-        this.productos = productos;
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj)
+            return true;
+        if (obj == null)
+            return false;
+        if (getClass() != obj.getClass())
+            return false;
+        Pedido other = (Pedido) obj;
+        if (id == null) {
+            if (other.id != null)
+                return false;
+        } else if (!id.equals(other.id))
+            return false;
+        return true;
     }
 
 }
