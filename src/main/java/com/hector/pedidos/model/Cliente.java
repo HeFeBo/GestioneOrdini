@@ -1,5 +1,6 @@
 package com.hector.pedidos.model;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import jakarta.persistence.CascadeType;
@@ -23,7 +24,7 @@ public class Cliente {
     private String dni;
 
     @OneToMany(mappedBy = "cliente", cascade = CascadeType.ALL)
-    private List<Pedido> pedidos;
+    private List<Pedido> pedidos = new ArrayList<>();
 
     public Cliente(String nombre, String dni) {
         this.nombre = nombre;

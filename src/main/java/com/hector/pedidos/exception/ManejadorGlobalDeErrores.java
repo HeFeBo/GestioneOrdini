@@ -63,6 +63,21 @@ public class ManejadorGlobalDeErrores {
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ex.getMessage());
     }
 
+    @ExceptionHandler(ProductoNoEncontradoException.class)
+    public ResponseEntity<String> manejarProductoNoEncontrado(ProductoNoEncontradoException ex) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ex.getMessage());
+    }
+
+    @ExceptionHandler(PedidoNoEncontradoException.class)
+    public ResponseEntity<String> manejarPedidoNoEncontrado(PedidoNoEncontradoException ex) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ex.getMessage());
+    }
+
+    @ExceptionHandler(CantidadDeProductosMayorException.class)
+    public ResponseEntity<String> manejarCantidadDeProductosMayor(CantidadDeProductosMayorException ex) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ex.getMessage());
+    }
+
     // 7. Fallback general (opcional)
     @ExceptionHandler(Exception.class)
     public ResponseEntity<String> manejarExcepcionGeneral(Exception ex) {

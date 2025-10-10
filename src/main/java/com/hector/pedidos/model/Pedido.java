@@ -1,11 +1,16 @@
 package com.hector.pedidos.model;
 
+import java.util.ArrayList;
+import java.util.List;
+
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToMany;
 
 @Entity
 public class Pedido {
@@ -16,6 +21,14 @@ public class Pedido {
     @ManyToOne
     @JoinColumn(name = "cliente_id")
     private Cliente cliente;
+
+    @OneToMany(mappedBy = "pedido", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<ProductoPedido> listaProductosPedidos = new ArrayList<>();
+
+    public Pedido(Cliente cliente, List<ProductoPedido> listaProductosPedidos) {
+        this.cliente = cliente;
+        this.listaProductosPedidos = listaProductosPedidos;
+    }
 
     public Pedido(Cliente cliente) {
         this.cliente = cliente;
@@ -35,6 +48,14 @@ public class Pedido {
 
     public void setCliente(Cliente cliente) {
         this.cliente = cliente;
+    }
+
+    public List<ProductoPedido> getListaProductosPedidos() {
+        return listaProductosPedidos;
+    }
+
+    public void setListaProductosPedidos(List<ProductoPedido> listaProductosPedidos) {
+        this.listaProductosPedidos = listaProductosPedidos;
     }
 
     @Override

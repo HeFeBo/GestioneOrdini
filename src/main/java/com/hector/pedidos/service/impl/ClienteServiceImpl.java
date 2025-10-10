@@ -44,7 +44,12 @@ public class ClienteServiceImpl implements ClienteService{
         List<Cliente> clientes = repoCliente.findAll();
         List<ClienteResponse> respuesta = new ArrayList<>();
         for(Cliente c: clientes){
-            respuesta.add(new ClienteResponse(c.getId(),c.getNombre(), c.getDni()));
+            List<Pedido> listaPedido = c.getPedidos();
+            List<Long> idPedidos = new ArrayList<>();
+            for(Pedido p : listaPedido){
+                idPedidos.add(p.getId());
+            }
+            respuesta.add(new ClienteResponse(c.getId(),c.getNombre(), c.getDni(), idPedidos));
         }
         return respuesta;
     }
@@ -52,14 +57,29 @@ public class ClienteServiceImpl implements ClienteService{
     @Override
     public ClienteResponse buscarCliente(Long idCliente) {
         Cliente cliente = repoCliente.findById(idCliente).orElseThrow(() -> new ClienteNoEncontradoException("No se encontro el cliente con Id = " + idCliente));
-        return new ClienteResponse(cliente.getId(), cliente.getNombre(), cliente.getDni());
+        List<Pedido> listaPedido = cliente.getPedidos();
+        List<Long> idPedidos = new ArrayList<>();
+
+        for(Pedido p : listaPedido){
+            idPedidos.add(p.getId());
+        }
+
+        return new ClienteResponse(cliente.getId(), cliente.getNombre(), cliente.getDni(), idPedidos);
     }
 
     @Override
     public ClienteResponse buscarClientePedido(Long idPedido) {
         Pedido pedido = repoPedido.findById(idPedido).orElseThrow(() -> new PedidoNoEncontradoException("No se encontro el pedido con Id = " + idPedido));
         Cliente cliente = pedido.getCliente();
-        return new ClienteResponse(cliente.getId(), cliente.getNombre(), cliente.getDni());
+
+        List<Pedido> listaPedido = cliente.getPedidos();
+        List<Long> idPedidos = new ArrayList<>();
+
+        for(Pedido p : listaPedido){
+            idPedidos.add(p.getId());
+        }
+
+        return new ClienteResponse(cliente.getId(), cliente.getNombre(), cliente.getDni(), idPedidos);
     }
 
     @Override
@@ -71,7 +91,14 @@ public class ClienteServiceImpl implements ClienteService{
         for(ProductoPedido pp : productosPedidos){
             if(pp.getProducto().equals(producto)){
                 Cliente cliente = pp.getPedido().getCliente();
-                ClienteResponse respuestaCliente = new ClienteResponse(cliente.getId(), cliente.getNombre(), cliente.getDni());
+                List<Pedido> listaPedido = cliente.getPedidos();
+                List<Long> idPedidos = new ArrayList<>();
+
+                for(Pedido p : listaPedido){
+                    idPedidos.add(p.getId());
+                }
+
+                ClienteResponse respuestaCliente = new ClienteResponse(cliente.getId(), cliente.getNombre(), cliente.getDni(), idPedidos);
                 respuesta.add(respuestaCliente);
             }
         }
@@ -87,8 +114,11 @@ public class ClienteServiceImpl implements ClienteService{
     @Override
     public ClienteResponse registrarCliente(ClienteRequest dto) {
         Cliente cliente = new Cliente(dto.getNombre(), dto.getDni());
-        Cliente guardado = repoCliente.save(cliente);
-        return new ClienteResponse(guardado.getId(), guardado.getNombre(), guardado.getDni());      
+        Cliente clienteGuardado = repoCliente.save(cliente);
+
+        List<Long> idPedidos = new ArrayList<>();
+
+        return new ClienteResponse(clienteGuardado.getId(), clienteGuardado.getNombre(), clienteGuardado.getDni(), idPedidos);      
     }
 
 }

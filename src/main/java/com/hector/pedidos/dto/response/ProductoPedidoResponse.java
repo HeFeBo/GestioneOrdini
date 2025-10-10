@@ -2,13 +2,13 @@ package com.hector.pedidos.dto.response;
 
 public class ProductoPedidoResponse {
     private Long id;
-    private PedidoResponse pedido;
+    private Long idPedido;
     private ProductoResponse producto;
     private Integer cantidad;
 
-    public ProductoPedidoResponse(Long id, PedidoResponse pedido, ProductoResponse producto, Integer cantidad) {
+    public ProductoPedidoResponse(Long id, Long idPedido, ProductoResponse producto, Integer cantidad) {
         this.id = id;
-        this.pedido = pedido;
+        this.idPedido = idPedido;
         this.producto = producto;
         this.cantidad = cantidad;
     }
@@ -17,8 +17,8 @@ public class ProductoPedidoResponse {
         return id;
     }
 
-    public PedidoResponse getPedido() {
-        return pedido;
+    public Long getIdPedido() {
+        return idPedido;
     }
 
     public ProductoResponse getProducto() {

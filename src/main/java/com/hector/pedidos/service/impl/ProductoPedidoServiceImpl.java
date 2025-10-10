@@ -9,8 +9,6 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 
 import com.hector.pedidos.dto.request.ProductoPedidoRequest;
-import com.hector.pedidos.dto.response.ClienteResponse;
-import com.hector.pedidos.dto.response.PedidoResponse;
 import com.hector.pedidos.dto.response.ProductoCantidadResponse;
 import com.hector.pedidos.dto.response.ProductoPedidoResponse;
 import com.hector.pedidos.dto.response.ProductoResponse;
@@ -42,24 +40,17 @@ public class ProductoPedidoServiceImpl implements ProductoPedidoService{
         this.repoProducto = repoProducto;
         this.repoPedido = repoPedido;
         this.repoProductoPedido = repoProductoPedido;
-
     }
 
     @Override
     public ProductoPedidoResponse agregarProductoPedido(ProductoPedidoRequest dto) {
         Pedido pedido = repoPedido.findById(dto.getIdPedido()).orElseThrow(() -> new PedidoNoEncontradoException("El pedido con ID " + dto.getIdPedido() + " no existe."));
-        Cliente cliente = pedido.getCliente();
         Producto producto = repoProducto.findById(dto.getIdProducto()).orElseThrow(() -> new ProductoNoEncontradoException("El producto con ID " + dto.getIdProducto() + " no existe."));
-
         ProductoPedido productoPedido = new ProductoPedido(pedido, producto, dto.getCantidad());
-        ProductoPedido guardado = repoProductoPedido.save(productoPedido);
-
-        
-        ClienteResponse clienteResponse = new ClienteResponse(cliente.getId(), cliente.getNombre(), cliente.getDni());
+        ProductoPedido productoPedidoGuardado = repoProductoPedido.save(productoPedido);
         ProductoResponse productoResponse = new ProductoResponse(producto.getId(), producto.getNombre(), producto.getOrigen(), producto.getPrecio());
-        PedidoResponse pedidoResponse = new PedidoResponse(pedido.getId(), clienteResponse);
 
-        return new ProductoPedidoResponse(guardado.getId(), pedidoResponse, productoResponse, guardado.getCantidad());
+        return new ProductoPedidoResponse(productoPedidoGuardado.getId(), pedido.getId(), productoResponse, productoPedidoGuardado.getCantidad());
     }
 
     @Override
@@ -113,14 +104,9 @@ public class ProductoPedidoServiceImpl implements ProductoPedidoService{
 
         for(ProductoPedido pp : listaProductoPedido){
             Pedido pedido = pp.getPedido();
-            Cliente cliente = pedido.getCliente();
             Producto producto = pp.getProducto();
-
-            ClienteResponse clienteResponse = new ClienteResponse(cliente.getId(), cliente.getNombre(), cliente.getDni());
             ProductoResponse productoResponse = new ProductoResponse(producto.getId(), producto.getNombre(), producto.getOrigen(), producto.getPrecio());
-
-            PedidoResponse pedidoResponse = new PedidoResponse(pedido.getId(), clienteResponse);
-            ProductoPedidoResponse productoPedidoResponse = new ProductoPedidoResponse(pp.getId(), pedidoResponse, productoResponse, pp.getCantidad());
+            ProductoPedidoResponse productoPedidoResponse = new ProductoPedidoResponse(pp.getId(), pedido.getId(), productoResponse, pp.getCantidad());
             respuesta.add(productoPedidoResponse);
         }
 
@@ -147,14 +133,10 @@ public class ProductoPedidoServiceImpl implements ProductoPedidoService{
 
         for(ProductoPedido pp : listaProductoPedido){
             Pedido pedido = pp.getPedido();
-            Cliente cliente = pedido.getCliente();
             Producto producto = pp.getProducto();
-
-            ClienteResponse clienteResponse = new ClienteResponse(cliente.getId(), cliente.getNombre(), cliente.getDni());
-            PedidoResponse pedidoResponse = new PedidoResponse(idPedido, clienteResponse);
             ProductoResponse productoResponse = new ProductoResponse(producto.getId(), producto.getNombre(), producto.getOrigen(), producto.getPrecio());
 
-            ProductoPedidoResponse productoPedidoResponse = new ProductoPedidoResponse(pp.getId(), pedidoResponse, productoResponse, pp.getCantidad());
+            ProductoPedidoResponse productoPedidoResponse = new ProductoPedidoResponse(pp.getId(), pedido.getId(), productoResponse, pp.getCantidad());
             respuesta.add(productoPedidoResponse);
         }
 
