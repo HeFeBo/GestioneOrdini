@@ -38,10 +38,10 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/api/auth/**").permitAll()
                 .requestMatchers(
-                    "/api/clientes/**", 
-                                "/api/pedidos/**", 
-                                "/api/productos/**", 
-                                "/api/productos_pedidos/**").hasAnyRole("USER", "ADMIN")
+                    "/api/customers/**", 
+                                "/api/orders/**", 
+                                "/api/products/**", 
+                                "/api/orders-registration/**").hasAnyRole("USER", "ADMIN")
                 .anyRequest().authenticated()
             )
             .authenticationManager(authManager)
