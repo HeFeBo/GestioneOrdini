@@ -1,0 +1,766 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Gestione Ordini — Pannello API</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,700;1,9..144,400&display=swap" rel="stylesheet"/>
+<style>
+  :root {
+    --bg:       #f5f0e8;
+    --surface:  #faf7f2;
+    --surface2: #ede8df;
+    --border:   #d4ccbc;
+    --ink:      #1a1610;
+    --muted:    #8a8070;
+    --get:      #1a6b3c;
+    --get-bg:   #e8f5ee;
+    --post:     #1a4f8a;
+    --post-bg:  #e8f0fa;
+    --put:      #7a4a00;
+    --put-bg:   #fdf0dc;
+    --delete:   #8a1a1a;
+    --delete-bg:#fae8e8;
+    --accent:   #c4381c;
+    --accent2:  #1a4f8a;
+    --success:  #1a6b3c;
+    --error:    #8a1a1a;
+    --warn:     #7a4a00;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: 'Fraunces', Georgia, serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* ── TEXTURE ── */
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='4' height='4'%3E%3Crect width='4' height='4' fill='%23f5f0e8'/%3E%3Ccircle cx='1' cy='1' r='0.4' fill='%23d4ccbc' opacity='0.4'/%3E%3C/svg%3E");
+    pointer-events: none; z-index: 0;
+  }
+
+  /* ── HEADER ── */
+  header {
+    position: relative; z-index: 10;
+    padding: 24px 40px;
+    background: var(--ink);
+    color: var(--bg);
+    display: flex; align-items: center; gap: 20px; flex-wrap: wrap;
+    border-bottom: 4px solid var(--accent);
+  }
+
+  .logo-mark {
+    width: 52px; height: 52px;
+    border: 2px solid var(--accent);
+    border-radius: 4px;
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 14px; font-weight: 600;
+    color: var(--accent);
+    flex-shrink: 0;
+    letter-spacing: -1px;
+  }
+
+  header h1 {
+    font-size: 26px; font-weight: 700;
+    font-style: italic; letter-spacing: -0.5px;
+    color: var(--bg);
+  }
+  header h1 span { color: var(--accent); font-style: normal; }
+  header .subtitle {
+    font-size: 13px; color: #a09880; margin-top: 2px;
+    font-family: 'IBM Plex Mono', monospace; font-style: normal;
+  }
+
+  .base-url-bar {
+    margin-left: auto;
+    display: flex; align-items: center; gap: 10px;
+    background: rgba(255,255,255,0.07);
+    border: 1px solid rgba(255,255,255,0.15);
+    border-radius: 4px;
+    padding: 8px 14px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 13px;
+  }
+  .base-url-bar label { color: #a09880; }
+  .base-url-bar input {
+    background: none; border: none; outline: none;
+    color: #f5f0e8; font-family: inherit; font-size: inherit;
+    width: 210px;
+  }
+
+  /* ── AUTH BAR ── */
+  .auth-bar {
+    position: relative; z-index: 10;
+    padding: 10px 40px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
+  }
+  .auth-bar label {
+    color: var(--muted); font-size: 12px;
+    font-family: 'IBM Plex Mono', monospace; text-transform: uppercase;
+  }
+  .auth-bar input {
+    background: white; border: 1px solid var(--border);
+    border-radius: 3px; padding: 5px 10px;
+    color: var(--ink); font-family: 'IBM Plex Mono', monospace; font-size: 13px;
+    outline: none; transition: border-color .2s; width: 140px;
+  }
+  .auth-bar input:focus { border-color: var(--accent); }
+  .btn-auth {
+    padding: 6px 16px; border-radius: 3px;
+    border: 1px solid var(--ink); cursor: pointer;
+    font-family: 'Fraunces', serif; font-size: 13px; font-weight: 700;
+    background: var(--ink); color: var(--bg);
+    transition: all .2s; font-style: italic;
+  }
+  .btn-auth:hover { background: var(--accent); border-color: var(--accent); }
+  .auth-status {
+    font-family: 'IBM Plex Mono', monospace; font-size: 12px;
+    padding: 4px 10px; border-radius: 3px;
+  }
+  .auth-status.ok  { background: var(--get-bg);    color: var(--get);    border: 1px solid #b8dfc7; }
+  .auth-status.err { background: var(--delete-bg); color: var(--error);  border: 1px solid #dfc0c0; }
+  .auth-note {
+    margin-left: auto; font-size: 12px; color: var(--muted);
+    font-family: 'IBM Plex Mono', monospace;
+  }
+
+  /* ── LAYOUT ── */
+  .layout {
+    position: relative; z-index: 1;
+    display: grid;
+    grid-template-columns: 260px 1fr 390px;
+    height: calc(100vh - 124px);
+  }
+
+  /* ── SIDEBAR ── */
+  nav {
+    border-right: 1px solid var(--border);
+    overflow-y: auto; padding: 12px 0;
+    background: var(--surface);
+  }
+  nav::-webkit-scrollbar { width: 4px; }
+  nav::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+  .nav-group { margin-bottom: 2px; }
+  .nav-group-title {
+    padding: 12px 20px 5px;
+    font-size: 10px; font-weight: 600; letter-spacing: 2.5px;
+    color: var(--muted); text-transform: uppercase;
+    font-family: 'IBM Plex Mono', monospace;
+    border-top: 1px solid var(--border); margin-top: 4px;
+  }
+  .nav-group:first-child .nav-group-title { border-top: none; }
+
+  .nav-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 7px 20px; cursor: pointer;
+    transition: background .15s;
+    border-left: 3px solid transparent;
+    font-size: 13px;
+  }
+  .nav-item:hover { background: var(--surface2); }
+  .nav-item.active {
+    background: var(--surface2);
+    border-left-color: var(--accent);
+  }
+
+  .method-badge {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px; font-weight: 600;
+    padding: 2px 5px; border-radius: 2px;
+    flex-shrink: 0; width: 46px; text-align: center;
+  }
+  .GET    { background: var(--get-bg);    color: var(--get);    border: 1px solid #b8dfc7; }
+  .POST   { background: var(--post-bg);   color: var(--post);   border: 1px solid #b8ccec; }
+  .PUT    { background: var(--put-bg);    color: var(--put);    border: 1px solid #e8d0a0; }
+  .DELETE { background: var(--delete-bg); color: var(--delete); border: 1px solid #dfc0c0; }
+
+  .nav-label { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+  /* ── MAIN ── */
+  main {
+    overflow-y: auto; padding: 32px 36px;
+    background: var(--bg);
+  }
+  main::-webkit-scrollbar { width: 4px; }
+  main::-webkit-scrollbar-thumb { background: var(--border); }
+
+  .endpoint-card { display: none; animation: fadeIn .2s ease; }
+  .endpoint-card.active { display: block; }
+  @keyframes fadeIn { from { opacity:0; transform:translateY(5px); } to { opacity:1; transform:none; } }
+
+  .card-header {
+    display: flex; align-items: center; gap: 14px; margin-bottom: 20px;
+    padding-bottom: 16px; border-bottom: 1px solid var(--border);
+  }
+  .card-header .method-badge { font-size: 12px; padding: 4px 10px; width: auto; }
+  .card-title { font-size: 24px; font-weight: 700; font-style: italic; }
+
+  .card-url {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 13px; color: var(--muted);
+    background: white; border: 1px solid var(--border);
+    padding: 10px 16px; border-radius: 3px;
+    margin-bottom: 20px; word-break: break-all;
+  }
+  .card-url span { color: var(--accent); font-weight: 600; }
+  .card-desc { font-size: 15px; color: var(--muted); margin-bottom: 22px; line-height: 1.6; }
+
+  .field-group { margin-bottom: 16px; }
+  .field-group label {
+    display: block; font-size: 11px; font-weight: 600;
+    color: var(--muted); text-transform: uppercase; letter-spacing: 1px;
+    margin-bottom: 5px; font-family: 'IBM Plex Mono', monospace;
+  }
+  .field-group input {
+    width: 100%; background: white;
+    border: 1px solid var(--border); border-radius: 3px;
+    padding: 9px 12px; color: var(--ink);
+    font-family: 'IBM Plex Mono', monospace; font-size: 14px;
+    outline: none; transition: border-color .2s;
+  }
+  .field-group input:focus { border-color: var(--accent); }
+
+  .section-sep { border: none; border-top: 1px solid var(--border); margin: 20px 0; }
+
+  .btn-send {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 11px 26px; border-radius: 3px; border: none; cursor: pointer;
+    font-family: 'Fraunces', serif; font-size: 15px; font-weight: 700;
+    font-style: italic; transition: all .2s;
+  }
+  .btn-send.GET    { background: var(--get);    color: white; }
+  .btn-send.POST   { background: var(--post);   color: white; }
+  .btn-send.PUT    { background: var(--put);    color: white; }
+  .btn-send.DELETE { background: var(--delete); color: white; }
+  .btn-send:hover  { filter: brightness(1.15); box-shadow: 0 3px 12px rgba(0,0,0,0.2); }
+  .btn-send:active { transform: scale(0.97); }
+
+  /* ── RESPONSE ── */
+  .response-panel {
+    border-left: 1px solid var(--border);
+    background: var(--ink);
+    display: flex; flex-direction: column;
+    overflow: hidden;
+  }
+
+  .response-header {
+    padding: 12px 18px;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+    display: flex; align-items: center; gap: 10px;
+    font-family: 'IBM Plex Mono', monospace; font-size: 12px;
+    color: #a09880;
+  }
+
+  .status-pill {
+    padding: 3px 10px; border-radius: 2px;
+    font-size: 12px; font-weight: 600;
+    font-family: 'IBM Plex Mono', monospace;
+  }
+  .status-pill.s2xx { background: rgba(26,107,60,0.3);  color: #6fcf97; }
+  .status-pill.s4xx { background: rgba(122,74,0,0.3);   color: #f2c94c; }
+  .status-pill.s5xx { background: rgba(138,26,26,0.3);  color: #eb5757; }
+  .status-pill.idle { background: rgba(255,255,255,0.07); color: #a09880; }
+
+  .time-badge { margin-left: auto; font-size: 11px; color: #6b6050; }
+
+  .copy-btn {
+    padding: 3px 9px; border-radius: 2px;
+    border: 1px solid rgba(255,255,255,0.15);
+    background: none; color: #a09880; cursor: pointer;
+    font-size: 11px; font-family: 'IBM Plex Mono', monospace;
+    transition: all .2s;
+  }
+  .copy-btn:hover { border-color: #a09880; color: #f5f0e8; }
+
+  .response-body {
+    flex: 1; overflow-y: auto; padding: 18px;
+    font-family: 'IBM Plex Mono', monospace; font-size: 12.5px;
+    line-height: 1.75; white-space: pre-wrap; word-break: break-all;
+    color: #d4ccbc;
+  }
+  .response-body::-webkit-scrollbar { width: 4px; }
+  .response-body::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); }
+
+  .placeholder {
+    height: 100%; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; gap: 10px;
+    color: #6b6050; font-family: 'IBM Plex Mono', monospace; font-size: 12px;
+    text-align: center; padding: 20px;
+  }
+  .placeholder-icon { font-size: 32px; opacity: .3; }
+
+  /* JSON */
+  .json-key  { color: #9ecbff; }
+  .json-str  { color: #a8d5a2; }
+  .json-num  { color: #f4b77e; }
+  .json-bool { color: #f2c94c; }
+  .json-null { color: #6b6050; }
+
+  .loading-dots { display: inline-flex; gap: 5px; }
+  .loading-dots span {
+    width: 7px; height: 7px; border-radius: 50%;
+    background: var(--accent); animation: bounce .9s infinite;
+  }
+  .loading-dots span:nth-child(2) { animation-delay: .18s; }
+  .loading-dots span:nth-child(3) { animation-delay: .36s; }
+  @keyframes bounce {
+    0%,80%,100% { transform:scale(0.5); opacity:.3; }
+    40%          { transform:scale(1);   opacity:1;  }
+  }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header>
+  <div class="logo-mark">GO</div>
+  <div>
+    <h1><span>Gestione</span> Ordini</h1>
+    <div class="subtitle">Pannello di test degli endpoint REST</div>
+  </div>
+  <div class="base-url-bar">
+    <label>BASE URL</label>
+    <input id="baseUrl" value="http://localhost:8080"/>
+  </div>
+</header>
+
+<!-- AUTH BAR -->
+<div class="auth-bar">
+  <label>Utente</label>
+  <input id="authUser" placeholder="nome utente" value="admin"/>
+  <label>Password</label>
+  <input id="authPass" type="password" placeholder="password" value="1234"/>
+  <button class="btn-auth" onclick="testAuth()">Verifica autenticazione</button>
+  <div id="authStatus" class="auth-status" style="display:none"></div>
+  <span class="auth-note">Basic Auth — le credenziali vengono inviate ad ogni richiesta</span>
+</div>
+
+<!-- LAYOUT -->
+<div class="layout">
+  <nav id="nav"></nav>
+  <main id="main"></main>
+  <div class="response-panel">
+    <div class="response-header">
+      <span>RISPOSTA</span>
+      <div id="statusPill" class="status-pill idle">— —</div>
+      <div id="timeBadge" class="time-badge"></div>
+      <button class="copy-btn" onclick="copyResponse()">copia</button>
+    </div>
+    <div class="response-body" id="responseBody">
+      <div class="placeholder">
+        <div class="placeholder-icon">✦</div>
+        <span>Seleziona un endpoint e invia la richiesta</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ════════════════════════════════════════════════════════════════
+//  ENDPOINT DEFINITIONS
+// ════════════════════════════════════════════════════════════════
+const endpoints = [
+
+  // ── CLIENTI (/api/customers) ──────────────────────────────────
+  { group:'Clienti', method:'GET', label:'Mostra tutti i clienti',
+    path:'/api/customers', desc:'Restituisce la lista completa di tutti i clienti registrati.', fields:[] },
+
+  { group:'Clienti', method:'POST', label:'Aggiungi cliente',
+    path:'/api/customers', desc:'Crea un nuovo cliente. Nome e carta d\'identità sono obbligatori.',
+    fields:[
+      { key:'name',   label:'Nome',              placeholder:'Es: Mario Rossi', type:'body' },
+      { key:'idCard', label:'Carta d\'identità', placeholder:'Es: AB123456',    type:'body' }
+    ]},
+
+  { group:'Clienti', method:'GET', label:'Cerca cliente per ID',
+    path:'/api/customers/{customerId}', desc:'Cerca un cliente tramite il suo ID. Restituisce 404 se non esiste.',
+    fields:[{ key:'customerId', label:'ID Cliente', placeholder:'1', type:'path' }] },
+
+  { group:'Clienti', method:'PUT', label:'Aggiorna cliente',
+    path:'/api/customers/{customerId}', desc:'Aggiorna il nome e la carta d\'identità di un cliente esistente.',
+    fields:[
+      { key:'customerId', label:'ID Cliente',        placeholder:'1',            type:'path' },
+      { key:'name',       label:'Nuovo nome',        placeholder:'Es: Luigi Bianchi', type:'body' },
+      { key:'idCard',     label:'Nuova carta d\'identità', placeholder:'Es: CD789012', type:'body' }
+    ]},
+
+  { group:'Clienti', method:'DELETE', label:'Elimina cliente',
+    path:'/api/customers/{customerId}', desc:'Elimina un cliente e tutti i suoi ordini a cascata.',
+    fields:[{ key:'customerId', label:'ID Cliente', placeholder:'1', type:'path' }] },
+
+  { group:'Clienti', method:'GET', label:'Cliente di un ordine',
+    path:'/api/customers/order/{orderId}', desc:'Restituisce il cliente proprietario di un ordine specifico.',
+    fields:[{ key:'orderId', label:'ID Ordine', placeholder:'1', type:'path' }] },
+
+  { group:'Clienti', method:'GET', label:'Clienti di un prodotto',
+    path:'/api/customers/product/{productId}', desc:'Restituisce tutti i clienti che hanno acquistato un prodotto specifico.',
+    fields:[{ key:'productId', label:'ID Prodotto', placeholder:'1', type:'path' }] },
+
+  // ── PRODOTTI (/api/products) ──────────────────────────────────
+  { group:'Prodotti', method:'GET', label:'Mostra tutti i prodotti',
+    path:'/api/products', desc:'Restituisce tutti i prodotti disponibili nel catalogo.', fields:[] },
+
+  { group:'Prodotti', method:'POST', label:'Aggiungi prodotto',
+    path:'/api/products', desc:'Crea un nuovo prodotto. Nome, origine e prezzo sono obbligatori.',
+    fields:[
+      { key:'name',   label:'Nome',    placeholder:'Es: Mela',      type:'body' },
+      { key:'origin', label:'Origine', placeholder:'Es: Italia',    type:'body' },
+      { key:'price',  label:'Prezzo',  placeholder:'Es: 1.50',      type:'body' }
+    ]},
+
+  { group:'Prodotti', method:'GET', label:'Cerca prodotto per ID',
+    path:'/api/products/{productId}', desc:'Cerca un prodotto tramite il suo ID.',
+    fields:[{ key:'productId', label:'ID Prodotto', placeholder:'1', type:'path' }] },
+
+  { group:'Prodotti', method:'PUT', label:'Aggiorna prodotto',
+    path:'/api/products/{productId}', desc:'Aggiorna nome, origine e prezzo di un prodotto esistente.',
+    fields:[
+      { key:'productId', label:'ID Prodotto',  placeholder:'1',         type:'path' },
+      { key:'name',      label:'Nuovo nome',   placeholder:'Es: Pera',  type:'body' },
+      { key:'origin',    label:'Nuova origine',placeholder:'Es: Spagna',type:'body' },
+      { key:'price',     label:'Nuovo prezzo', placeholder:'Es: 2.00',  type:'body' }
+    ]},
+
+  { group:'Prodotti', method:'DELETE', label:'Elimina prodotto',
+    path:'/api/products/{productId}', desc:'Elimina un prodotto dal catalogo.',
+    fields:[{ key:'productId', label:'ID Prodotto', placeholder:'1', type:'path' }] },
+
+  { group:'Prodotti', method:'GET', label:'Prodotti di un ordine',
+    path:'/api/products/order/{orderId}', desc:'Lista i prodotti inclusi in un ordine specifico.',
+    fields:[{ key:'orderId', label:'ID Ordine', placeholder:'1', type:'path' }] },
+
+  { group:'Prodotti', method:'GET', label:'Prodotti di un cliente',
+    path:'/api/products/customer/{customerId}', desc:'Lista tutti i prodotti distinti acquistati da un cliente.',
+    fields:[{ key:'customerId', label:'ID Cliente', placeholder:'1', type:'path' }] },
+
+  // ── ORDINI (/api/orders) ──────────────────────────────────────
+  { group:'Ordini', method:'GET', label:'Mostra tutti gli ordini',
+    path:'/api/orders', desc:'Restituisce tutti gli ordini registrati nel sistema.', fields:[] },
+
+  { group:'Ordini', method:'POST', label:'Crea ordine',
+    path:'/api/orders', desc:'Crea un ordine vuoto per un cliente. I prodotti si aggiungono tramite /api/orders-registration.',
+    fields:[{ key:'customerId', label:'ID Cliente', placeholder:'1', type:'body' }] },
+
+  { group:'Ordini', method:'GET', label:'Cerca ordine per ID',
+    path:'/api/orders/{orderId}', desc:'Cerca un ordine tramite il suo ID.',
+    fields:[{ key:'orderId', label:'ID Ordine', placeholder:'1', type:'path' }] },
+
+  { group:'Ordini', method:'PUT', label:'Aggiorna ordine',
+    path:'/api/orders/{orderId}', desc:'Aggiorna il cliente associato a un ordine esistente.',
+    fields:[
+      { key:'orderId',    label:'ID Ordine',       placeholder:'1', type:'path' },
+      { key:'customerId', label:'Nuovo ID Cliente', placeholder:'2', type:'body' }
+    ]},
+
+  { group:'Ordini', method:'DELETE', label:'Elimina ordine',
+    path:'/api/orders/{orderId}', desc:'Elimina un ordine e tutti i suoi articoli a cascata.',
+    fields:[{ key:'orderId', label:'ID Ordine', placeholder:'1', type:'path' }] },
+
+  { group:'Ordini', method:'GET', label:'Ordini di un cliente',
+    path:'/api/orders/cliente/{customerId}', desc:'Lista tutti gli ordini di un cliente.',
+    fields:[{ key:'customerId', label:'ID Cliente', placeholder:'1', type:'path' }] },
+
+  { group:'Ordini', method:'GET', label:'Ordini di un prodotto',
+    path:'/api/orders/producto/{productId}', desc:'Lista tutti gli ordini che contengono un prodotto specifico.',
+    fields:[{ key:'productId', label:'ID Prodotto', placeholder:'1', type:'path' }] },
+
+  // ── REGISTRAZIONI (/api/orders-registration) ──────────────────
+  { group:'Registrazioni', method:'GET', label:'Mostra tutte le registrazioni',
+    path:'/api/orders-registration', desc:'Lista tutti gli articoli registrati negli ordini.', fields:[] },
+
+  { group:'Registrazioni', method:'POST', label:'Aggiungi articolo a ordine',
+    path:'/api/orders-registration', desc:'Aggiunge un prodotto a un ordine esistente con la quantità indicata.',
+    fields:[
+      { key:'orderId',   label:'ID Ordine',   placeholder:'1', type:'body' },
+      { key:'productId', label:'ID Prodotto', placeholder:'1', type:'body' },
+      { key:'quantity',  label:'Quantità',    placeholder:'3', type:'body' }
+    ]},
+
+  { group:'Registrazioni', method:'GET', label:'Cerca registrazione per ID',
+    path:'/api/orders-registration/{registrationId}', desc:'Cerca una registrazione tramite il suo ID.',
+    fields:[{ key:'registrationId', label:'ID Registrazione', placeholder:'1', type:'path' }] },
+
+  { group:'Registrazioni', method:'PUT', label:'Aggiorna registrazione',
+    path:'/api/orders-registration/{registrationId}', desc:'Aggiorna ordine, prodotto e quantità di una registrazione esistente.',
+    fields:[
+      { key:'registrationId', label:'ID Registrazione', placeholder:'1', type:'path' },
+      { key:'orderId',        label:'Nuovo ID Ordine',  placeholder:'1', type:'body' },
+      { key:'productId',      label:'Nuovo ID Prodotto',placeholder:'2', type:'body' },
+      { key:'quantity',       label:'Nuova quantità',   placeholder:'5', type:'body' }
+    ]},
+
+  { group:'Registrazioni', method:'DELETE', label:'Elimina registrazione',
+    path:'/api/orders-registration/{registrationId}', desc:'Elimina un articolo da un ordine.',
+    fields:[{ key:'registrationId', label:'ID Registrazione', placeholder:'1', type:'path' }] },
+
+  { group:'Registrazioni', method:'GET', label:'Prodotti venduti',
+    path:'/api/orders-registration/products-sold', desc:'Lista tutti i prodotti che sono stati venduti almeno una volta.', fields:[] },
+
+  { group:'Registrazioni', method:'GET', label:'Venduti per ordine',
+    path:'/api/orders-registration/products-sold/{orderId}', desc:'Lista gli articoli venduti in un ordine specifico.',
+    fields:[{ key:'orderId', label:'ID Ordine', placeholder:'1', type:'path' }] },
+
+  { group:'Registrazioni', method:'GET', label:'Top N più venduti',
+    path:'/api/orders-registration/products-sold/top/{positions}', desc:'Restituisce i primi N prodotti più venduti ordinati per quantità.',
+    fields:[{ key:'positions', label:'Numero di posizioni', placeholder:'3', type:'path' }] },
+
+  // ── VENDITE ───────────────────────────────────────────────────
+  { group:'Vendite', method:'GET', label:'Vendita totale globale',
+    path:'/api/orders-registration/total-sale', desc:'Restituisce il totale in denaro di tutte le vendite generate.', fields:[] },
+
+  { group:'Vendite', method:'GET', label:'Vendita totale per ordine',
+    path:'/api/orders-registration/total-sale/order/{orderId}', desc:'Totale fatturato in un ordine specifico.',
+    fields:[{ key:'orderId', label:'ID Ordine', placeholder:'1', type:'path' }] },
+
+  { group:'Vendite', method:'GET', label:'Vendita totale per cliente',
+    path:'/api/orders-registration/total-sale/customer/{customerId}', desc:'Totale accumulato speso da un cliente.',
+    fields:[{ key:'customerId', label:'ID Cliente', placeholder:'1', type:'path' }] },
+
+  { group:'Vendite', method:'GET', label:'Vendita totale per prodotto',
+    path:'/api/orders-registration/total-sale/product/{productId}', desc:'Totale fatturato per un prodotto (prezzo × unità vendute).',
+    fields:[{ key:'productId', label:'ID Prodotto', placeholder:'1', type:'path' }] },
+
+  { group:'Vendite', method:'GET', label:'Media vendita per ordine',
+    path:'/api/orders-registration/total-sale/average', desc:'Media del valore di tutti gli ordini.', fields:[] },
+
+  // ── UNITÀ ─────────────────────────────────────────────────────
+  { group:'Unità', method:'GET', label:'Totale unità vendute',
+    path:'/api/orders-registration/total-units-sold', desc:'Quantità totale di unità vendute di tutti i prodotti.', fields:[] },
+
+  { group:'Unità', method:'GET', label:'Unità per ordine',
+    path:'/api/orders-registration/total-units-sold/order/{orderId}', desc:'Totale unità vendute in un ordine.',
+    fields:[{ key:'orderId', label:'ID Ordine', placeholder:'1', type:'path' }] },
+
+  { group:'Unità', method:'GET', label:'Unità per cliente',
+    path:'/api/orders-registration/total-units-sold/customer/{customerId}', desc:'Totale unità acquistate da un cliente.',
+    fields:[{ key:'customerId', label:'ID Cliente', placeholder:'1', type:'path' }] },
+
+  { group:'Unità', method:'GET', label:'Unità per prodotto',
+    path:'/api/orders-registration/total-units-sold/product/{productId}', desc:'Totale unità vendute di un prodotto specifico.',
+    fields:[{ key:'productId', label:'ID Prodotto', placeholder:'1', type:'path' }] },
+];
+
+// ════════════════════════════════════════════════════════════════
+//  RENDER
+// ════════════════════════════════════════════════════════════════
+let activeId = 0;
+
+function buildNav() {
+  const nav  = document.getElementById('nav');
+  const main = document.getElementById('main');
+  const groups = [...new Set(endpoints.map(e => e.group))];
+
+  groups.forEach(group => {
+    const groupEl = document.createElement('div');
+    groupEl.className = 'nav-group';
+    groupEl.innerHTML = `<div class="nav-group-title">${group}</div>`;
+
+    endpoints.forEach((ep, i) => {
+      if (ep.group !== group) return;
+      const item = document.createElement('div');
+      item.className = 'nav-item' + (i === 0 ? ' active' : '');
+      item.dataset.id = i;
+      item.innerHTML = `
+        <span class="method-badge ${ep.method}">${ep.method}</span>
+        <span class="nav-label">${ep.label}</span>`;
+      item.onclick = () => activateEndpoint(i);
+      groupEl.appendChild(item);
+    });
+    nav.appendChild(groupEl);
+
+    endpoints.forEach((ep, i) => {
+      if (ep.group !== group) return;
+      const card = document.createElement('div');
+      card.className = 'endpoint-card' + (i === 0 ? ' active' : '');
+      card.id = 'card-' + i;
+
+      const fieldsHtml = ep.fields.map(f => `
+        <div class="field-group">
+          <label>${f.label} <span style="color:var(--muted);font-weight:400">${f.type === 'path' ? '(percorso)' : '(corpo)'}</span></label>
+          <input id="f-${i}-${f.key}" placeholder="${f.placeholder}" value="${f.placeholder}"/>
+        </div>`).join('');
+
+      card.innerHTML = `
+        <div class="card-header">
+          <span class="method-badge ${ep.method}" style="font-size:12px;padding:4px 10px;width:auto">${ep.method}</span>
+          <span class="card-title">${ep.label}</span>
+        </div>
+        <div class="card-url">${ep.path.replace(/\{(\w+)\}/g, (_, k) => `<span>{${k}}</span>`)}</div>
+        <p class="card-desc">${ep.desc}</p>
+        <hr class="section-sep"/>
+        ${fieldsHtml}
+        <button class="btn-send ${ep.method}" onclick="sendRequest(${i})">
+          ▶ Invia richiesta
+        </button>`;
+      main.appendChild(card);
+    });
+  });
+}
+
+function activateEndpoint(id) {
+  document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+  document.querySelectorAll('.endpoint-card').forEach(el => el.classList.remove('active'));
+  document.querySelector(`.nav-item[data-id="${id}"]`).classList.add('active');
+  document.getElementById('card-' + id).classList.add('active');
+  activeId = id;
+  clearResponse();
+}
+
+// ════════════════════════════════════════════════════════════════
+//  HTTP
+// ════════════════════════════════════════════════════════════════
+function getAuthHeader() {
+  const user = document.getElementById('authUser').value;
+  const pass = document.getElementById('authPass').value;
+  return 'Basic ' + btoa(user + ':' + pass);
+}
+
+function buildUrl(ep, id) {
+  let url = document.getElementById('baseUrl').value + ep.path;
+  ep.fields.filter(f => f.type === 'path').forEach(f => {
+    const val = document.getElementById(`f-${id}-${f.key}`).value;
+    url = url.replace(`{${f.key}}`, encodeURIComponent(val));
+  });
+  return url;
+}
+
+function buildBody(ep, id) {
+  const bodyFields = ep.fields.filter(f => f.type === 'body');
+  if (!bodyFields.length) return null;
+  const obj = {};
+  bodyFields.forEach(f => {
+    const raw = document.getElementById(`f-${id}-${f.key}`).value;
+    const num = Number(raw);
+    obj[f.key] = raw !== '' && !isNaN(num) && raw.trim() !== '' ? num : raw;
+  });
+  return JSON.stringify(obj);
+}
+
+async function sendRequest(id) {
+  activeId = id;
+  const ep   = endpoints[id];
+  const url  = buildUrl(ep, id);
+  const body = buildBody(ep, id);
+
+  showLoading();
+  const t0 = performance.now();
+
+  try {
+    const res = await fetch(url, {
+      method: ep.method,
+      headers: {
+        'Authorization': getAuthHeader(),
+        ...(body ? { 'Content-Type': 'application/json' } : {})
+      },
+      body: body || undefined
+    });
+    const elapsed = Math.round(performance.now() - t0);
+    let text = '';
+    try { text = await res.text(); } catch(_) {}
+    showResponse(res.status, text, elapsed);
+  } catch(err) {
+    const elapsed = Math.round(performance.now() - t0);
+    showError(err.message, elapsed);
+  }
+}
+
+async function testAuth() {
+  const url = document.getElementById('baseUrl').value + '/api/customers';
+  try {
+    const res = await fetch(url, { headers: { 'Authorization': getAuthHeader() }});
+    const el = document.getElementById('authStatus');
+    el.style.display = 'inline-block';
+    if (res.status < 400) {
+      el.className = 'auth-status ok';
+      el.textContent = '✓ Autenticazione riuscita';
+    } else {
+      el.className = 'auth-status err';
+      el.textContent = `✗ Errore ${res.status} — credenziali non valide`;
+    }
+  } catch(e) {
+    const el = document.getElementById('authStatus');
+    el.style.display = 'inline-block';
+    el.className = 'auth-status err';
+    el.textContent = '✗ Impossibile connettersi al server';
+  }
+}
+
+// ════════════════════════════════════════════════════════════════
+//  RESPONSE DISPLAY
+// ════════════════════════════════════════════════════════════════
+function showLoading() {
+  document.getElementById('statusPill').className = 'status-pill idle';
+  document.getElementById('statusPill').textContent = '—';
+  document.getElementById('timeBadge').textContent = '';
+  document.getElementById('responseBody').innerHTML = `
+    <div class="placeholder">
+      <div class="loading-dots"><span></span><span></span><span></span></div>
+      <span>Invio in corso...</span>
+    </div>`;
+}
+
+function showResponse(status, text, ms) {
+  const pill = document.getElementById('statusPill');
+  pill.textContent = status;
+  pill.className = 'status-pill ' + (status < 300 ? 's2xx' : status < 500 ? 's4xx' : 's5xx');
+  document.getElementById('timeBadge').textContent = ms + ' ms';
+  try {
+    const parsed = JSON.parse(text);
+    document.getElementById('responseBody').innerHTML = syntaxHighlight(JSON.stringify(parsed, null, 2));
+  } catch(_) {
+    document.getElementById('responseBody').textContent = text || '(nessun contenuto)';
+  }
+}
+
+function showError(msg, ms) {
+  const pill = document.getElementById('statusPill');
+  pill.textContent = 'ERR';
+  pill.className = 'status-pill s5xx';
+  document.getElementById('timeBadge').textContent = ms + ' ms';
+  document.getElementById('responseBody').textContent =
+    `Errore di rete o CORS:\n${msg}\n\nVerifica che:\n• Il server sia in esecuzione sulla porta indicata\n• Non ci siano problemi di CORS\n• L'URL base sia corretto`;
+}
+
+function clearResponse() {
+  document.getElementById('statusPill').className = 'status-pill idle';
+  document.getElementById('statusPill').textContent = '— —';
+  document.getElementById('timeBadge').textContent = '';
+  document.getElementById('responseBody').innerHTML = `
+    <div class="placeholder">
+      <div class="placeholder-icon">✦</div>
+      <span>Seleziona un endpoint e invia la richiesta</span>
+    </div>`;
+}
+
+function syntaxHighlight(json) {
+  return json.replace(/("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g, m => {
+    let cls = 'json-num';
+    if (/^"/.test(m)) cls = /:$/.test(m) ? 'json-key' : 'json-str';
+    else if (/true|false/.test(m)) cls = 'json-bool';
+    else if (/null/.test(m)) cls = 'json-null';
+    return `<span class="${cls}">${m}</span>`;
+  });
+}
+
+function copyResponse() {
+  navigator.clipboard.writeText(document.getElementById('responseBody').innerText).catch(()=>{});
+}
+
+// ════════════════════════════════════════════════════════════════
+//  INIT
+// ════════════════════════════════════════════════════════════════
+buildNav();
+</script>
+</body>
+</html>
