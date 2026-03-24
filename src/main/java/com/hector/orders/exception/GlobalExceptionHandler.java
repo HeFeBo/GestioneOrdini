@@ -18,76 +18,72 @@ import jakarta.validation.ConstraintViolationException;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
-    // 1. Validaciones en DTOs con @Valid
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<Map<String, String>> manejarErroresValidacion(MethodArgumentNotValidException ex) {
-        Map<String, String> errores = new HashMap<>();
+    public ResponseEntity<Map<String, String>> handleValidationErrors(MethodArgumentNotValidException ex) {
+        Map<String, String> errors = new HashMap<>();
         ex.getBindingResult().getFieldErrors().forEach(error -> {
-            errores.put(error.getField(), error.getDefaultMessage());
+            errors.put(error.getField(), error.getDefaultMessage());
         });
-        return ResponseEntity.badRequest().body(errores);
+        return ResponseEntity.badRequest().body(errors);
     }
 
-    // 2. Validaciones en parámetros simples (@RequestParam, @PathVariable)
     @ExceptionHandler(ConstraintViolationException.class)
-    public ResponseEntity<List<String>> manejarViolaciones(ConstraintViolationException ex) {
-        List<String> errores = ex.getConstraintViolations()
+    public ResponseEntity<List<String>> handleViolations(ConstraintViolationException ex) {
+        List<String> errors = ex.getConstraintViolations()
             .stream()
             .map(violation -> violation.getPropertyPath() + ": " + violation.getMessage())
             .collect(Collectors.toList());
-        return ResponseEntity.badRequest().body(errores);
+        return ResponseEntity.badRequest().body(errors);
     }
 
-    // 3. JSON mal formado o tipos incorrectos en el cuerpo
     @ExceptionHandler(HttpMessageNotReadableException.class)
-    public ResponseEntity<String> manejarJsonMalFormado(HttpMessageNotReadableException ex) {
-        return ResponseEntity.badRequest().body("El formato del cuerpo de la solicitud es inválido.");
+    public ResponseEntity<String> handleMalformedJson(HttpMessageNotReadableException ex) {
+        return ResponseEntity.badRequest().body("Il formato del corpo della richiesta non è valido.");
     }
 
-    // 4. Tipos incorrectos en parámetros de URL
     @ExceptionHandler(MethodArgumentTypeMismatchException.class)
-    public ResponseEntity<String> manejarTipoIncorrecto(MethodArgumentTypeMismatchException ex) {
-        String campo = ex.getName();
-        Class<?> tipo = ex.getRequiredType();
-        String tipoEsperado = tipo != null ? tipo.getSimpleName() : "desconocido";
-        return ResponseEntity.badRequest().body("El parámetro '" + campo + "' debe ser de tipo " + tipoEsperado);
+    public ResponseEntity<String> handleIncorrectType(MethodArgumentTypeMismatchException ex) {
+        String field = ex.getName();
+        Class<?> type = ex.getRequiredType();
+        String expectedType = type != null ? type.getSimpleName() : "sconosciuto";
+        return ResponseEntity.badRequest()
+                .body("Il parametro '" + field + "' deve essere di tipo " + expectedType);
     }
 
-    // 5. Parámetros obligatorios faltantes
     @ExceptionHandler(MissingServletRequestParameterException.class)
-    public ResponseEntity<String> manejarParametroFaltante(MissingServletRequestParameterException ex) {
-        return ResponseEntity.badRequest().body("Falta el parámetro obligatorio: " + ex.getParameterName());
+    public ResponseEntity<String> handleMissingParameter(MissingServletRequestParameterException ex) {
+        return ResponseEntity.badRequest()
+                .body("Parametro obbligatorio mancante: " + ex.getParameterName());
     }
 
-    // 6. Ejemplo de excepción personalizada
     @ExceptionHandler(CustomerNotFoundException.class)
-    public ResponseEntity<String> manejarClienteNoEncontrado(CustomerNotFoundException ex) {
+    public ResponseEntity<String> nandleCustomerNotFoundException(CustomerNotFoundException ex) {
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ex.getMessage());
     }
 
     @ExceptionHandler(ProductNotFoundException.class)
-    public ResponseEntity<String> manejarProductoNoEncontrado(ProductNotFoundException ex) {
+    public ResponseEntity<String> handleProductNotFoundException(ProductNotFoundException ex) {
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ex.getMessage());
     }
 
     @ExceptionHandler(OrderNotFoundException.class)
-    public ResponseEntity<String> manejarPedidoNoEncontrado(OrderNotFoundException ex) {
+    public ResponseEntity<String> handleOrderNotFoundException(OrderNotFoundException ex) {
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ex.getMessage());
     }
 
     @ExceptionHandler(RegistrationNotFoundException.class)
-    public ResponseEntity<String> manejarItemNoEncontrado(RegistrationNotFoundException ex) {
+    public ResponseEntity<String> handleRegistrationNotFoundExceptio(RegistrationNotFoundException ex) {
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ex.getMessage());
     }
 
     @ExceptionHandler(AmountGreaterThanTheLimitException.class)
-    public ResponseEntity<String> manejarCantidadDeProductosMayor(AmountGreaterThanTheLimitException ex) {
+    public ResponseEntity<String> handleAmountGreaterThanTheLimitException(AmountGreaterThanTheLimitException ex) {
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ex.getMessage());
     }
 
     // 7. Fallback general (opcional)
     @ExceptionHandler(Exception.class)
-    public ResponseEntity<String> manejarExcepcionGeneral(Exception ex) {
+    public ResponseEntity<String> handleGeneralException(Exception ex) {
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Ocurrió un error inesperado.");
     }
 }
