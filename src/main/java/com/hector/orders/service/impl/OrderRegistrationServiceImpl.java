@@ -38,7 +38,12 @@ public class OrderRegistrationServiceImpl implements OrderRegistrationService{
     private final OrderRepo orderRepo;
     private final OrderRegistrationRepo orderRegistrationRepo;
 
-    public OrderRegistrationServiceImpl(CustomerRepo customerRepo, ProductRepo productRepo, OrderRepo orderRepo, OrderRegistrationRepo orderRegistrationRepo) {
+    public OrderRegistrationServiceImpl(
+        CustomerRepo customerRepo, 
+        ProductRepo productRepo, 
+        OrderRepo orderRepo, 
+        OrderRegistrationRepo orderRegistrationRepo) {
+
         this.customerRepo = customerRepo;
         this.productRepo = productRepo;
         this.orderRepo = orderRepo;
@@ -48,7 +53,10 @@ public class OrderRegistrationServiceImpl implements OrderRegistrationService{
     @Override
     public List<OrderRegistrationResponse> showOrdersRegistration() {
         List<OrderRegistration> registrations = orderRegistrationRepo.findAll();
-        List<OrderRegistrationResponse> response = registrations.stream().map(OrderRegistrationMapper::toDTO).toList();
+        List<OrderRegistrationResponse> response = registrations
+        .stream()
+        .map(OrderRegistrationMapper::toDTO)
+        .toList();
 
         return response;
         
