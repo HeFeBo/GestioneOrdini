@@ -10,62 +10,63 @@ import com.hector.orders.dto.request.OrderRequest;
 import com.hector.orders.dto.response.OrderResponse;
 import com.hector.orders.exception.CustomerNotFoundException;
 import com.hector.orders.exception.OrderNotFoundException;
-import com.hector.orders.exception.ProductNotFoundException;
 import com.hector.orders.mapper.OrderMapper;
 import com.hector.orders.model.Customer;
 import com.hector.orders.model.Order;
 import com.hector.orders.repository.CustomerRepo;
-import com.hector.orders.repository.OrderRegistrationRepo;
 import com.hector.orders.repository.OrderRepo;
-import com.hector.orders.repository.ProductRepo;
-import com.hector.orders.service.OrderService;
+import com.hector.orders.service.interf.OrderService;
 
-@Qualifier("OrderService")
+import jakarta.transaction.Transactional;
+import lombok.RequiredArgsConstructor;
+
+@Qualifier("OrderServiceImpl")
 @Service
+@RequiredArgsConstructor
 public class OrderServiceImpl implements OrderService{
     private final CustomerRepo customerRepo;
-    private final ProductRepo productRepo;
     private final OrderRepo orderRepo;
-    private final OrderRegistrationRepo orderRegistrationRepo;
 
-    public OrderServiceImpl(CustomerRepo customerRepo, ProductRepo productRepo,
-            OrderRepo orderRepo, OrderRegistrationRepo orderRegistrationRepo) {
-        this.customerRepo = customerRepo;
-        this.productRepo = productRepo;
-        this.orderRepo = orderRepo;
-        this.orderRegistrationRepo = orderRegistrationRepo;
-    }
+    private final OrderMapper orderMapper;
 
     @Override
+    @Transactional
     public List<OrderResponse> showOrders() {  
         List<Order> orders = orderRepo.findAll();
-        return orders.stream().map(o -> OrderMapper.toDTO(o)).collect(Collectors.toList());
+        return orders.stream().map(orderMapper::toDTO).collect(Collectors.toList());
     }
 
     @Override
+    @Transactional
     public OrderResponse addOrder(OrderRequest dto) {
         long customerId = dto.getCustomerId();
         Customer customer = customerRepo.findById(customerId).orElseThrow(() -> new CustomerNotFoundException("Cliente con ID " + customerId + " non trovato."));
-        Order order = OrderMapper.toEntity(customer);
+        Order order = orderMapper.toEntity(dto);
+        order.setCustomer(customer);
         Order orderSaved = orderRepo.save(order);
 
-        return OrderMapper.toDTO(orderSaved);
+        return orderMapper.toDTO(orderSaved);
         
     }
 
     @Override
+    @Transactional
     public OrderResponse searchOrder(long orderId) {
         Order order = orderRepo.findById(orderId).orElseThrow(() -> new OrderNotFoundException("Ordine con ID " + orderId + " non trovato."));
-        return OrderMapper.toDTO(order);
+        
+        return orderMapper.toDTO(order);
     }
 
     @Override
+    @Transactional
     public OrderResponse updateOrder(long orderId, OrderRequest dto) {
         Order order = orderRepo.findById(orderId).orElseThrow(() -> new OrderNotFoundException("Ordine con ID " + orderId + " non trovato."));
         long customerId = dto.getCustomerId();
         Customer customer = customerRepo.findById(customerId).orElseThrow(() -> new CustomerNotFoundException("Cliente con ID " + customerId + " non trovato."));
         order.setCustomer(customer);
-        return OrderMapper.toDTO(orderRepo.save(order));
+        order.setIssueDate(dto.getIssueDate());
+
+        return orderMapper.toDTO(orderRepo.save(order));
     }
 
 
@@ -76,21 +77,6 @@ public class OrderServiceImpl implements OrderService{
         }
 
         orderRepo.deleteById(orderId);
-    }
-
-    @Override
-    public List<OrderResponse> searchOrdersByCustomer(long customerId) {
-        Customer customer = customerRepo.findById(customerId).orElseThrow(() -> new CustomerNotFoundException("Cliente con ID " + customerId + " non trovato."));
-        List<Order> orders = customer.getOrders();
-        return orders.stream().map(o -> OrderMapper.toDTO(o)).collect(Collectors.toList());
-    }
-
-    @Override
-    public List<OrderResponse> searchOrdersByProduct(long productId) { 
-        productRepo.findById(productId).orElseThrow(() -> new ProductNotFoundException("Prodotto con ID " + productId + " non trovato."));
-
-        return orderRegistrationRepo.findByProductId(productId).stream().map(r -> OrderMapper.toDTO(r.getOrder())).collect(Collectors.toList());
-
     }
 
 }

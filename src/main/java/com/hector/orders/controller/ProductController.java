@@ -16,7 +16,8 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.hector.orders.dto.request.ProductRequest;
 import com.hector.orders.dto.response.ProductResponse;
-import com.hector.orders.service.ProductService;
+import com.hector.orders.service.interf.AuxiliaryService;
+import com.hector.orders.service.interf.ProductService;
 
 import jakarta.validation.Valid;
 
@@ -24,23 +25,27 @@ import jakarta.validation.Valid;
 @RequestMapping("/api/products")
 public class ProductController {
     private final ProductService productService;
+    private final AuxiliaryService auxiliaryService;
 
-    public ProductController(@Qualifier("ProductService") ProductService productService) {
+    public ProductController(@Qualifier("ProductServiceImpl") ProductService productService, @Qualifier("AuxiliaryServiceImpl") AuxiliaryService auxiliaryService) {
         this.productService = productService;
+        this.auxiliaryService = auxiliaryService;
     }
 
+    //Estos metodos son para gestionar un inventario
+
     @GetMapping
-    public ResponseEntity<List<ProductResponse>> showProducts() {
+    public ResponseEntity<List<ProductResponse>> showProducts() { //Lo hace el usuario y el admin
         return ResponseEntity.ok(productService.showProducts());
     }
 
     @PostMapping
-    public ResponseEntity<ProductResponse> addProduct(@Valid @RequestBody ProductRequest dto) {
+    public ResponseEntity<ProductResponse> addProduct(@Valid @RequestBody ProductRequest dto) { 
         return ResponseEntity.status(201).body(productService.addProduct(dto));
     }
 
     @GetMapping("/{productId}")
-    public ResponseEntity<ProductResponse> searchProduct(@PathVariable("productId") long productId) {
+    public ResponseEntity<ProductResponse> searchProduct(@PathVariable("productId") long productId) { //Lo hace el usuario y el admin
         return ResponseEntity.ok(productService.searchProduct(productId));
     }
 
@@ -55,14 +60,16 @@ public class ProductController {
         return ResponseEntity.noContent().build();
     }
 
+    //Estos metodos son para gestionar los productos ya solicitados por los clientes
+
     @GetMapping("/order/{orderId}")
-    public ResponseEntity<List<ProductResponse>> searchProductsByOrder(@PathVariable("orderId") long orderId) {
-        return ResponseEntity.ok(productService.searchProductsByOrder(orderId));
+    public ResponseEntity<List<ProductResponse>> searchProductsByOrder(@PathVariable("orderId") long orderId) { //Lo hace el usuario y el admin
+        return ResponseEntity.ok(auxiliaryService.searchProductsByOrder(orderId));
     }
 
     @GetMapping("/customer/{customerId}")
     public ResponseEntity<Set<ProductResponse>> searchProductsByCustomer(@PathVariable("customerId") long customerId) {
-        return ResponseEntity.ok(productService.searchProductsByCustomer(customerId));
+        return ResponseEntity.ok(auxiliaryService.searchProductsByCustomer(customerId));
     }
 
 }

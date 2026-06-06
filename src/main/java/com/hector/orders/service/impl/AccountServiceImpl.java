@@ -11,13 +11,12 @@ import org.springframework.stereotype.Service;
 
 import com.hector.orders.repository.AccountRepo;
 
+import lombok.RequiredArgsConstructor;
+
 @Service
+@RequiredArgsConstructor
 public class AccountServiceImpl implements UserDetailsService{
     private final AccountRepo accountRepository;
-
-    public AccountServiceImpl(AccountRepo accountRepository) {
-        this.accountRepository = accountRepository;
-    }
 
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {

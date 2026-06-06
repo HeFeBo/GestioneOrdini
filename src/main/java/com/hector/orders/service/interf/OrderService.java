@@ -1,4 +1,4 @@
-package com.hector.orders.service;
+package com.hector.orders.service.interf;
 
 import java.util.List;
 
@@ -11,6 +11,5 @@ public interface OrderService {
     OrderResponse searchOrder(long orderId);
     OrderResponse updateOrder(long orderId, OrderRequest dto);
     void deleteOrder(long orderId);
-    List<OrderResponse> searchOrdersByCustomer(long customerId);
-    List<OrderResponse> searchOrdersByProduct(long productId);
+    
 }

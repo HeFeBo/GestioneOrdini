@@ -1,23 +1,28 @@
 package com.hector.orders.mapper;
 
-import org.springframework.lang.NonNull;
+import org.springframework.stereotype.Component;
 
+import com.hector.orders.dto.request.OrderRequest;
 import com.hector.orders.dto.response.OrderResponse;
-import com.hector.orders.model.Customer;
 import com.hector.orders.model.Order;
 
+@Component
 public class OrderMapper {
-    public static @NonNull OrderResponse toDTO(Order order) {
-        OrderResponse response = new OrderResponse(
-                order.getId(),
-                order.getCustomer().getId(),
-                order.getRegistrations().stream().map(r -> r.getProduct().getId()).toList()
-        );
+    public OrderResponse toDTO(Order order) {
+        OrderResponse response = new OrderResponse();
+        response.setId(order.getId());
+        response.setCustomerId(order.getCustomer().getId());
+        response.setDeliveryDate(order.getDeliveryDate());
+        response.setIssueDate(order.getIssueDate());
+        response.setItemsId(order.getItems().stream().map(it -> it.getId()).toList());
+
         return response;
     }
 
-    public static @NonNull Order toEntity(Customer customer){
-        Order order = new Order(customer);
+    public Order toEntity(OrderRequest request){
+        Order order = new Order();
+        order.setIssueDate(request.getIssueDate());
+
         return order;
     }
 

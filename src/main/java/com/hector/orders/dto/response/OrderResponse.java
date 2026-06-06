@@ -1,22 +1,29 @@
 package com.hector.orders.dto.response;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 @Getter
+@Setter
+@NoArgsConstructor
 @AllArgsConstructor
 public class OrderResponse {
-    private Long id;
-    private Long customerId;
-    private List<Long> ordersRegistrationsId;
+    private long id;
+    private long customerId;
+    private LocalDateTime deliveryDate;
+    private LocalDateTime issueDate;
+    private List<Long> itemsId;
 
     @Override
     public int hashCode() {
         final int prime = 31;
         int result = 1;
-        result = prime * result + ((id == null) ? 0 : id.hashCode());
+        result = prime * result + (int) (id ^ (id >>> 32));
         return result;
     }
 
@@ -29,12 +36,9 @@ public class OrderResponse {
         if (getClass() != obj.getClass())
             return false;
         OrderResponse other = (OrderResponse) obj;
-        if (id == null) {
-            if (other.id != null)
-                return false;
-        } else if (!id.equals(other.id))
+        if (id != other.id)
             return false;
         return true;
     }
-    
+
 }
